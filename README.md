@@ -1,6 +1,6 @@
-# OBS VirtualCam System Tray Toggle
+# OBS VirtualCam Tray Controller
 
-🎥 **OBS VirtualCam System Tray Toggle** is a lightweight Windows system tray application that connects to OBS Studio via its WebSocket API. It allows you to:
+🎥 **OBS VirtualCam Tray Controller** is a lightweight Windows system tray application that connects to OBS Studio via its WebSocket API. It allows you to:
 
 ✅ Monitor the visibility of a specific source (e.g., your webcam)  
 ✅ Toggle the source ON/OFF with a simple click on the tray icon  
@@ -38,4 +38,27 @@ This tool is perfect for users who want to control their OBS VirtualCam behavior
 1. Clone this repository:
    ```bash
    git clone https://github.com/<your-username>/obs-virtualcam-tray.git
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run the app:
+   ```bash
+   python tray_app.py
+   ```
 
+---
+
+## 📷 Tray Icons
+
+| State         | Icon   |
+|---------------|--------|
+| Camera ON     | 🟢     |
+| Camera OFF    | 🔴     |
+
+---
+
+## 📜 License
+
+MIT
