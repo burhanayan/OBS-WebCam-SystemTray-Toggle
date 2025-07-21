@@ -1,0 +1,164 @@
+name: Build Release Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r config/requirements-build.txt
+    
+    - name: Build Windows executable
+      run: |
+        pyinstaller config/obs-tray.spec --clean
+    
+    - name: Prepare Windows distribution
+      run: |
+        mkdir dist\windows
+        copy dist\OBS-VirtualCam-Tray-Controller.exe dist\windows\
+        echo OBS VirtualCam Tray Controller for Windows > dist\windows\README.txt
+        echo. >> dist\windows\README.txt
+        echo Simply run OBS-VirtualCam-Tray-Controller.exe to start the application. >> dist\windows\README.txt
+    
+    - name: Create Windows ZIP
+      run: |
+        cd dist
+        7z a -tzip OBS-VirtualCam-Tray-Controller-Windows.zip windows\*
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-executable
+        path: dist/OBS-VirtualCam-Tray-Controller-Windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r config/requirements-build.txt
+    
+    - name: Build macOS app
+      run: |
+        pyinstaller config/obs-tray.spec --clean
+    
+    - name: Prepare macOS distribution
+      run: |
+        mkdir -p dist/macos
+        cp -r "dist/OBS VirtualCam Tray Controller.app" dist/macos/
+        echo "OBS VirtualCam Tray Controller for macOS" > dist/macos/README.txt
+        echo "" >> dist/macos/README.txt
+        echo "Drag the app to your Applications folder to install." >> dist/macos/README.txt
+    
+    - name: Create macOS ZIP
+      run: |
+        cd dist/macos
+        zip -r ../OBS-VirtualCam-Tray-Controller-macOS.zip .
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-app
+        path: dist/OBS-VirtualCam-Tray-Controller-macOS.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk python3-dev
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r config/requirements-build.txt
+    
+    - name: Build Linux executable
+      run: |
+        pyinstaller config/obs-tray.spec --clean
+    
+    - name: Prepare Linux distribution
+      run: |
+        mkdir -p dist/linux
+        cp dist/obs-virtualcam-tray-controller dist/linux/
+        chmod +x dist/linux/obs-virtualcam-tray-controller
+        
+        # Create desktop entry
+        cat > dist/linux/obs-virtualcam-tray-controller.desktop << EOF
+        [Desktop Entry]
+        Version=1.0
+        Type=Application
+        Name=OBS VirtualCam Tray Controller
+        Comment=Control OBS virtualcam from system tray
+        Exec=obs-virtualcam-tray-controller
+        Terminal=false
+        Categories=Utility;AudioVideo;
+        EOF
+        
+        # Create README
+        echo "OBS VirtualCam Tray Controller for Linux" > dist/linux/README.txt
+        echo "" >> dist/linux/README.txt
+        echo "Run ./obs-virtualcam-tray-controller to start the application." >> dist/linux/README.txt
+    
+    - name: Create Linux tarball
+      run: |
+        cd dist
+        tar -czf OBS-VirtualCam-Tray-Controller-Linux.tar.gz linux/
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-executable
+        path: dist/OBS-VirtualCam-Tray-Controller-Linux.tar.gz
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          windows-executable/OBS-VirtualCam-Tray-Controller-Windows.zip
+          macos-app/OBS-VirtualCam-Tray-Controller-macOS.zip
+          linux-executable/OBS-VirtualCam-Tray-Controller-Linux.tar.gz
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
