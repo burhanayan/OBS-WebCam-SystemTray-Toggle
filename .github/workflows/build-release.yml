@@ -27,6 +27,7 @@ jobs:
         pyinstaller config/obs-tray.spec --clean
     
     - name: Prepare Windows distribution
+      shell: cmd
       run: |
         mkdir dist\windows
         copy dist\OBS-VirtualCam-Tray-Controller.exe dist\windows\
